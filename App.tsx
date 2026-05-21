@@ -179,39 +179,50 @@ export default function App() {
         const isKeywordEnabled = (state === 'enabled' || state === 'active' || !state);
         if (!isKeywordEnabled) continue;
 
-        const asinList = adGroupAsins[adGroupId] ? Array.from(adGroupAsins[adGroupId]).sort().join(', ') : 'N/A';
         const audience = adGroupAudiences[adGroupId] || getVal(row, ['Audience ID', 'Audience Name', 'Audience']) || 'N/A';
         const placementProfile = getPlacementProfileString(campaignId);
         
-        // Step 4: Placement profile and ASIN are now part of the key
-        const key = `${String(keyword).toLowerCase()}|${rawMatchType}|${placementProfile.toLowerCase()}|${String(audience).toLowerCase()}|${asinList.toLowerCase()}`;
-        
-        if (!groups[key]) {
-          groups[key] = {
-            keyword: String(keyword),
-            matchType: String(matchType),
-            asin: asinList,
-            placement: placementProfile,
-            audience: String(audience),
-            instances: []
-          };
+        // Get the individual ASINs for this ad group, or default to ['N/A'] if empty
+        const currentAsins = adGroupAsins[adGroupId] && adGroupAsins[adGroupId].size > 0 
+          ? Array.from(adGroupAsins[adGroupId]) 
+          : ['N/A'];
+
+        // FIX: Loop through each ASIN individually so we check for granular overlaps!
+        for (const singleAsin of currentAsins) {
+          // The key now isolates a SINGLE ASIN instead of the entire joined string list
+          const key = `${String(keyword).toLowerCase()}|${rawMatchType}|${placementProfile.toLowerCase()}|${String(audience).toLowerCase()}|${singleAsin.toLowerCase()}`;
+          
+          if (!groups[key]) {
+            groups[key] = {
+              keyword: String(keyword),
+              matchType: String(matchType),
+              asin: singleAsin, // Shows the specific overlapping ASIN in the UI
+              placement: placementProfile,
+              audience: String(audience),
+              instances: []
+            };
+          }
+          
+          // Avoid pushing the exact same row/instance twice for the same ASIN group
+          const isAlreadyTracked = groups[key].instances.some(inst => inst.row === (i + 1));
+          if (!isAlreadyTracked) {
+            groups[key].instances.push({
+              campaign: campaignName,
+              adGroup: String(adGroupId),
+              campaignState: campaignState,
+              adGroupState: adGroupStates[adGroupId] || 'N/A',
+              acos: String(getVal(row, ['ACoS', 'Total ACoS', 'Advertising Cost of Sales']) || '0%'),
+              bid: String(getVal(row, ['Bid', 'Max Bid', 'Keyword Bid']) || '0.00'),
+              impressions: String(getVal(row, ['Impressions']) || '0'),
+              clicks: String(getVal(row, ['Clicks']) || '0'),
+              spend: String(getVal(row, ['Spend', 'Advertising Spend']) || '0.00'),
+              sales: String(getVal(row, ['Sales', 'Total Sales', '7 Day Total Sales']) || '0.00'),
+              orders: String(getVal(row, ['Orders', 'Total Orders', '7 Day Total Orders']) || '0'),
+              roas: String(getVal(row, ['ROAS', 'Return on Advertising Spend']) || '0.00'),
+              row: i + 1
+            });
+          }
         }
-        
-        groups[key].instances.push({
-          campaign: campaignName,
-          adGroup: String(adGroupId),
-          campaignState: campaignState,
-          adGroupState: adGroupStates[adGroupId] || 'N/A',
-          acos: String(getVal(row, ['ACoS', 'Total ACoS', 'Advertising Cost of Sales']) || '0%'),
-          bid: String(getVal(row, ['Bid', 'Max Bid', 'Keyword Bid']) || '0.00'),
-          impressions: String(getVal(row, ['Impressions']) || '0'),
-          clicks: String(getVal(row, ['Clicks']) || '0'),
-          spend: String(getVal(row, ['Spend', 'Advertising Spend']) || '0.00'),
-          sales: String(getVal(row, ['Sales', 'Total Sales', '7 Day Total Sales']) || '0.00'),
-          orders: String(getVal(row, ['Orders', 'Total Orders', '7 Day Total Orders']) || '0'),
-          roas: String(getVal(row, ['ROAS', 'Return on Advertising Spend']) || '0.00'),
-          row: i + 1
-        });
       }
 
       const duplicates = Object.values(groups);
