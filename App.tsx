@@ -229,7 +229,7 @@ export default function App() {
       duplicates.sort((a, b) => b.instances.length - a.instances.length);
       setPpcAuditResults(duplicates);
     } catch (err) {
-      console.error("PPC Deduplicator failed:", err);
+      console.error("PPC Duplicate Keyword Tool failed:", err);
       setPpcError("Failed to process the bulk file. Please ensure it's a valid Amazon bulk file.");
     } finally {
       setIsAuditingPpc(false);
@@ -350,10 +350,10 @@ export default function App() {
         <header className="mb-8 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              MAG Deduplicator Tool
+              Duplicate Keyword Finder
             </h1>
             <p className="mt-2 text-lg text-gray-600">
-              PPC bulk file auditing and deduplication.
+              PPC bulk file audit for checking duplicates.
             </p>
           </div>
         </header>
@@ -487,7 +487,7 @@ function PpcAuditResults({ isAuditing, results, error, onNewAudit }: any) {
     return (
       <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center min-h-[400px]">
         <Search className="w-16 h-16 text-gray-200 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-400">No PPC Deduplicator Results</h3>
+        <h3 className="text-xl font-semibold text-gray-400">No PPC Duplicate Keyword Results</h3>
         <p className="text-gray-400 mt-2 max-w-xs">
           Upload a bulk file to identify duplicate keyword targeting.
         </p>
@@ -519,7 +519,7 @@ function PpcAuditResults({ isAuditing, results, error, onNewAudit }: any) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">PPC Deduplicator Report</h3>
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">PPC Duplicate Keyword Report</h3>
         <button 
           onClick={onNewAudit}
           className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
