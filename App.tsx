@@ -165,8 +165,12 @@ export default function App() {
         const campaignName = String(getVal(row, ['Campaign Name', 'Campaign Name (Informational only)', 'Campaign', 'Campaign ID']) || campaignId);
         
         // Step 1: Only enabled campaigns
-        const campaignState = campaignStates[campaignId] || 'enabled'; // Default to enabled if not found
+        const campaignState = campaignStates[campaignId] || 'enabled';
         if (campaignState.toLowerCase() !== 'enabled' && campaignState.toLowerCase() !== 'active') continue;
+
+        // Step 2: Only enabled Ad Groups (This was the missing piece!)
+        const adGrpState = adGroupStates[adGroupId] || 'enabled';
+        if (adGrpState.toLowerCase() !== 'enabled' && adGrpState.toLowerCase() !== 'active') continue;
 
         const keyword = getVal(row, ['Keyword Text', 'Keyword', 'Targeting', 'Product Targeting', 'Targeting Expression', 'Targeting Text']);
         if (!keyword) continue;
@@ -175,6 +179,7 @@ export default function App() {
         const rawMatchType = String(matchType).toLowerCase();
         if (rawMatchType.includes('negative')) continue;
 
+        // Step 3: Only enabled Keywords
         const state = String(getVal(row, ['State', 'Status']) || '').toLowerCase();
         const isKeywordEnabled = (state === 'enabled' || state === 'active' || !state);
         if (!isKeywordEnabled) continue;
@@ -187,30 +192,28 @@ export default function App() {
           ? Array.from(adGroupAsins[adGroupId]) 
           : ['N/A'];
 
-        // FIX: Loop through each ASIN individually so we check for granular overlaps!
+        // Loop through each ASIN individually so we check for granular overlaps
         for (const singleAsin of currentAsins) {
-          // The key now isolates a SINGLE ASIN instead of the entire joined string list
           const key = `${String(keyword).toLowerCase()}|${rawMatchType}|${placementProfile.toLowerCase()}|${String(audience).toLowerCase()}|${singleAsin.toLowerCase()}`;
           
           if (!groups[key]) {
             groups[key] = {
               keyword: String(keyword),
               matchType: String(matchType),
-              asin: singleAsin, // Shows the specific overlapping ASIN in the UI
+              asin: singleAsin, 
               placement: placementProfile,
               audience: String(audience),
               instances: []
             };
           }
           
-          // Avoid pushing the exact same row/instance twice for the same ASIN group
           const isAlreadyTracked = groups[key].instances.some(inst => inst.row === (i + 1));
           if (!isAlreadyTracked) {
             groups[key].instances.push({
               campaign: campaignName,
               adGroup: String(adGroupId),
               campaignState: campaignState,
-              adGroupState: adGroupStates[adGroupId] || 'N/A',
+              adGroupState: adGrpState, // Uses our new state variable
               acos: String(getVal(row, ['ACoS', 'Total ACoS', 'Advertising Cost of Sales']) || '0%'),
               bid: String(getVal(row, ['Bid', 'Max Bid', 'Keyword Bid']) || '0.00'),
               impressions: String(getVal(row, ['Impressions']) || '0'),
@@ -229,7 +232,7 @@ export default function App() {
       duplicates.sort((a, b) => b.instances.length - a.instances.length);
       setPpcAuditResults(duplicates);
     } catch (err) {
-      console.error("PPC Duplicate Keyword Tool failed:", err);
+      console.error("PPC Deduplicator failed:", err);
       setPpcError("Failed to process the bulk file. Please ensure it's a valid Amazon bulk file.");
     } finally {
       setIsAuditingPpc(false);
